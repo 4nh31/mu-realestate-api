@@ -1,5 +1,6 @@
 """Punto de entrada de la API de MU Real Estate."""
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 import app.core.models  # noqa: F401  (registra todos los modelos)
@@ -42,6 +43,12 @@ API_PREFIX = "/api/v1"
 for router in (auth_router, usuarios_router, propiedades_panel, propiedades_publico, catalogos_router,
                auditoria_router):
     app.include_router(router, prefix=API_PREFIX)
+
+
+@app.get("/", include_in_schema=False)
+def raiz() -> RedirectResponse:
+    """La raíz redirige a la documentación interactiva."""
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health", tags=["Sistema"], summary="Verificación de estado")

@@ -134,7 +134,7 @@ python -m app.scripts.crear_admin --email admin@murealestate.mx --nombre "Admini
 uvicorn app.main:app --reload
 ```
 
-Abre http://localhost:8000/docs.
+Abre http://localhost:8000/docs (la raíz http://localhost:8000 también te redirige ahí).
 
 ---
 
@@ -170,22 +170,17 @@ Regla: **nunca** modifiques tablas a mano; cambia el modelo en `infrastructure.p
 
 ## 6. Pruebas
 
-Necesitan una base de datos aparte, `mu_realestate_test` (se borra y se vuelve a crear en cada ejecución):
-
-```sql
-CREATE DATABASE mu_realestate_test;
-```
-
 ```bash
-# Windows (PowerShell)
-$env:DATABASE_URL="postgresql+psycopg://postgres:TU_CONTRASEÑA@localhost:5432/mu_realestate_test"; pytest
-# macOS / Linux
-DATABASE_URL=postgresql+psycopg://postgres:TU_CONTRASEÑA@localhost:5432/mu_realestate_test pytest
+pytest -v
 ```
 
-Con Docker: `docker compose exec db createdb -U postgres mu_realestate_test` y luego ejecuta `pytest` en tu entorno local apuntando a `localhost:5432`.
+No necesitas configurar nada extra: las pruebas toman el usuario y la contraseña de PostgreSQL de tu `.env`
+y usan una base aparte llamada `mu_realestate_test`, que **se crea sola** si no existe.
+Tu base real (`mu_realestate`) nunca se modifica.
 
----
+Si quieres usar otra base para pruebas, define `TEST_DATABASE_URL` antes de ejecutar `pytest`.
+
+Resultado esperado: `26 passed`.
 
 ## 7. Estructura (Clean Architecture + vertical slices)
 
@@ -236,3 +231,4 @@ Para agregar un módulo nuevo, copia la estructura de `features/propiedades/`, r
 | `Ejecute primero: alembic upgrade head` al crear admin | Igual: aplica las migraciones primero |
 | 401 en Swagger | No has hecho **Authorize**, o el token expiró (60 min) |
 | 403 en Swagger | Tu rol no tiene el permiso de ese endpoint |
+| `la autentificación password falló para el usuario postgres` | La contraseña de `DATABASE_URL` en `.env` no es la de tu PostgreSQL |
