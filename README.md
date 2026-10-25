@@ -149,9 +149,7 @@ Los endpoints bajo `/api/v1/publico/...` no requieren sesión.
 
 ---
 
-## 5. Alembic (migraciones) — chuleta
-
-El proyecto **sí incluye Alembic** (carpeta `migrations/`). Hay dos migraciones:
+## 5. Alembic 
 
 | Revisión | Qué hace |
 |---|---|
