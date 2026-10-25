@@ -3,14 +3,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
 
-from app.core.deps import DbSession, require_permission
+from app.core.deps import RESPUESTAS_PROTEGIDAS, DbSession, require_permission
 from app.features.auditoria.application import Auditor
 from app.features.usuarios import application as casos
 from app.features.usuarios.domain import Permisos
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 from app.features.usuarios.schemas import RolOut, UsuarioActualizar, UsuarioCrear, UsuarioOut
 
-router = APIRouter(prefix="/usuarios", tags=["Usuarios, roles y permisos"])
+router = APIRouter(prefix="/usuarios", tags=["Usuarios, roles y permisos"], responses=RESPUESTAS_PROTEGIDAS)
 Admin = Annotated[Usuario, Depends(require_permission(Permisos.USUARIOS_GESTIONAR))]
 
 

@@ -5,6 +5,7 @@ from typing import Annotated
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -45,3 +46,14 @@ def require_permission(clave: str) -> Callable[[Usuario], Usuario]:
         return usuario
 
     return _verificar
+
+
+class ErrorOut(BaseModel):
+    detail: str
+
+
+# Respuestas de error documentadas en Swagger para los routers protegidos.
+RESPUESTAS_PROTEGIDAS = {
+    401: {"model": ErrorOut, "description": "No autenticado: falta el token, es inválido o expiró"},
+    403: {"model": ErrorOut, "description": "Sin permiso: el rol del usuario no tiene el permiso requerido"},
+}

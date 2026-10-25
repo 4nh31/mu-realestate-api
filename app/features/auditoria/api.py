@@ -4,11 +4,11 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict
 
-from app.core.deps import DbSession, require_permission
+from app.core.deps import RESPUESTAS_PROTEGIDAS, DbSession, require_permission
 from app.features.auditoria.infrastructure import AuditoriaRepository
 from app.features.usuarios.domain import Permisos
 
-router = APIRouter(prefix="/auditoria", tags=["Auditoría de cambios"])
+router = APIRouter(prefix="/auditoria", tags=["Auditoría de cambios"], responses=RESPUESTAS_PROTEGIDAS)
 
 
 class RegistroOut(BaseModel):

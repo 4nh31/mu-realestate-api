@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.core.deps import DbSession, require_permission
+from app.core.deps import RESPUESTAS_PROTEGIDAS, DbSession, require_permission
 from app.core.exceptions import NoEncontrado
 from app.features.auditoria.application import Auditor
 from app.features.propiedades import application as casos
@@ -16,7 +16,7 @@ from app.features.propiedades.schemas import (CambioPublicacion, DatosInternosIn
 from app.features.usuarios.domain import Permisos
 from app.features.usuarios.infrastructure import Usuario
 
-panel = APIRouter(prefix="/propiedades", tags=["Propiedades (panel)"])
+panel = APIRouter(prefix="/propiedades", tags=["Propiedades (panel)"], responses=RESPUESTAS_PROTEGIDAS)
 publico = APIRouter(prefix="/publico/propiedades", tags=["Propiedades (público)"])
 
 

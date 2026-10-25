@@ -44,7 +44,7 @@ class TipoMedio(str, enum.Enum):
 
 
 E = EstadoPublicacion
-# Diagrama de estados de publicación (Figura 5 de la memoria).
+# Diagrama de estados de publicación (ver memoria, Actividad 4).
 TRANSICIONES: dict[EstadoPublicacion, set[EstadoPublicacion]] = {
     E.BORRADOR: {E.EN_REVISION},
     E.EN_REVISION: {E.PUBLICADA, E.RECHAZADA},
