@@ -138,7 +138,21 @@ Abre http://localhost:8000/docs (la raíz http://localhost:8000 también te redi
 
 ---
 
-## 4. Probar la API en Swagger
+## 4. Módulos y endpoints
+
+| Módulo | Prefijo | Qué hace |
+|---|---|---|
+| Autenticación | `/api/v1/auth` | Inicio de sesión (JWT) y usuario actual |
+| Usuarios | `/api/v1/usuarios` | Alta, edición y desactivación de usuarios |
+| Propiedades | `/api/v1/propiedades` | Inventario, datos internos, publicación y medios |
+| Sitio público | `/api/v1/publico` | Listado público, solicitudes de clientes y ofertas de propietarios |
+| Solicitudes y avisos | `/api/v1/solicitudes`, `/api/v1/avisos` | Asignar, atender o descartar solicitudes; avisos internos |
+| Prospectos (CRM) | `/api/v1/prospectos` | Registro, búsqueda, etapas y seguimientos |
+| Agenda | `/api/v1/citas` | Agendar, confirmar, reprogramar, cancelar y registrar visitas |
+| Dashboard | `/api/v1/dashboard` | Indicadores y reporte por periodo (JSON o CSV) |
+| Auditoría | `/api/v1/auditoria` | Bitácora de cambios |
+
+## 4.1 Probar la API en Swagger
 
 1. Entra a http://localhost:8000/docs.
 2. Clic en **Authorize** (candado).
@@ -155,6 +169,7 @@ Los endpoints bajo `/api/v1/publico/...` no requieren sesión.
 |---|---|
 | `1538dc5c2bbf` esquema inicial | Crea 18 tablas, tipos ENUM, llaves, índices y restricciones |
 | `76e17c599c2f` datos iniciales | Roles (administrador, asesor), 12 permisos, ciudades, zonas y amenidades de Q. Roo |
+| `bb1196688f84` CRM | Tabla `prospecto_propiedades` (propiedades de interés) y `solicitudes.motivo_descarte` |
 
 ```bash
 alembic upgrade head                                  # aplicar todo lo pendiente
@@ -180,7 +195,7 @@ Tu base real (`mu_realestate`) nunca se modifica.
 
 Si quieres usar otra base para pruebas, define `TEST_DATABASE_URL` antes de ejecutar `pytest`.
 
-Resultado esperado: `26 passed`.
+Resultado esperado: `41 passed`.
 
 ## 7. Estructura (Clean Architecture + vertical slices)
 
@@ -201,7 +216,10 @@ app/
 │   │   ├── schemas.py        # Entrada/salida (Pydantic)
 │   │   └── api.py            # Endpoints
 │   ├── auth/  usuarios/  auditoria/  catalogos/
-│   └── solicitudes/  prospectos/  agenda/   # modelos listos; endpoints en próximos sprints
+│   ├── solicitudes/      # Solicitudes del sitio, ofertas de particulares y avisos internos
+│   ├── prospectos/       # CRM: prospectos, etapas y seguimientos
+│   ├── agenda/           # Citas de visita (sin empalmes por asesor)
+│   └── dashboard/        # Indicadores y reporte por periodo (JSON o CSV)
 └── scripts/crear_admin.py
 migrations/               # Alembic
 tests/                    # Pytest

@@ -7,10 +7,16 @@ import app.core.models  # noqa: F401  (registra todos los modelos)
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.features.auditoria.api import router as auditoria_router
+from app.features.agenda.api import router as agenda_router
 from app.features.auth.api import router as auth_router
 from app.features.catalogos.api import router as catalogos_router
+from app.features.dashboard.api import router as dashboard_router
 from app.features.propiedades.api import panel as propiedades_panel
 from app.features.propiedades.api import publico as propiedades_publico
+from app.features.prospectos.api import router as prospectos_router
+from app.features.solicitudes.api import avisos as avisos_router
+from app.features.solicitudes.api import panel as solicitudes_panel
+from app.features.solicitudes.api import publico as solicitudes_publico
 from app.features.usuarios.api import router as usuarios_router
 
 settings = get_settings()
@@ -30,6 +36,12 @@ TAGS = [
     {"name": "Propiedades (panel)", "description": "Inventario, datos internos y publicación."},
     {"name": "Propiedades (público)", "description": "Buscador y ficha pública del sitio."},
     {"name": "Catálogos", "description": "Ciudades, zonas y amenidades para filtros."},
+    {"name": "Solicitudes (público)", "description": "Contacto, visita y «Vende o renta con nosotros»."},
+    {"name": "Centro de solicitudes", "description": "Asignación, atención y descarte de solicitudes."},
+    {"name": "Avisos internos", "description": "Avisos del usuario autenticado."},
+    {"name": "Prospectos (CRM)", "description": "Registro, seguimiento y etapas de los prospectos."},
+    {"name": "Agenda de visitas", "description": "Agendar, confirmar, reprogramar y cancelar visitas (RN-05)."},
+    {"name": "Dashboard y reportes", "description": "Indicadores de la operación y reportes por periodo."},
     {"name": "Auditoría de cambios", "description": "Bitácora de cambios relevantes (RN-06)."},
 ]
 
@@ -41,7 +53,8 @@ register_exception_handlers(app)
 
 API_PREFIX = "/api/v1"
 for router in (auth_router, usuarios_router, propiedades_panel, propiedades_publico, catalogos_router,
-               auditoria_router):
+               solicitudes_publico, solicitudes_panel, avisos_router, prospectos_router, agenda_router,
+               dashboard_router, auditoria_router):
     app.include_router(router, prefix=API_PREFIX)
 
 

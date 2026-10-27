@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "MU Real Estate API"
-    app_version: str = "0.4.0"
+    app_version: str = "0.8.0"
     environment: str = "development"
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/mu_realestate"

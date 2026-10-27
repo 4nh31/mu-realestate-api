@@ -68,6 +68,12 @@ class UsuarioRepository:
     def listar_roles(self) -> list[Rol]:
         return list(self.db.scalars(select(Rol).order_by(Rol.nombre)))
 
+    def con_permiso(self, clave: str) -> list[Usuario]:
+        """Usuarios activos cuyo rol incluye el permiso indicado (destinatarios de avisos)."""
+        stmt = (select(Usuario).join(Rol).join(rol_permisos).join(Permiso)
+                .where(Permiso.clave == clave, Usuario.activo.is_(True)))
+        return list(self.db.scalars(stmt).unique())
+
     def agregar(self, usuario: Usuario) -> Usuario:
         self.db.add(usuario)
         self.db.flush()

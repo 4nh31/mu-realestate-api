@@ -49,7 +49,7 @@ from app.core.security import hash_password
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 from app.main import app
 
-TABLAS_DATOS = ["auditoria", "avisos", "solicitudes", "seguimientos", "citas", "prospectos", "medios",
+TABLAS_DATOS = ["auditoria", "avisos", "solicitudes", "seguimientos", "citas", "prospecto_propiedades", "prospectos", "medios",
                 "propiedad_amenidades", "datos_internos", "propiedades", "propietarios", "usuarios"]
 
 

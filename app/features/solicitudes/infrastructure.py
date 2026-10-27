@@ -1,8 +1,8 @@
-"""Modelos del centro de solicitudes y avisos internos (endpoints en el Sprint 5)."""
+"""Infraestructura del centro de solicitudes y avisos internos: modelos ORM y repositorios."""
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship
 
 from app.core.database import Base
 from app.core.types import pg_enum
@@ -23,8 +23,11 @@ class Solicitud(Base):
                                                     default=EstadoSolicitud.NUEVA, server_default="nueva", index=True)
     asignado_a: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     prospecto_id: Mapped[int | None] = mapped_column(ForeignKey("prospectos.id", ondelete="SET NULL"))
+    motivo_descarte: Mapped[str | None] = mapped_column(Text)
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     atendido_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    propiedad = relationship("Propiedad", lazy="joined")
 
 
 class Aviso(Base):
@@ -35,3 +38,41 @@ class Aviso(Base):
     titulo: Mapped[str] = mapped_column(String(150))
     leido: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SolicitudRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def obtener(self, solicitud_id: int) -> Solicitud | None:
+        return self.db.get(Solicitud, solicitud_id)
+
+    def agregar(self, solicitud: Solicitud) -> Solicitud:
+        self.db.add(solicitud)
+        self.db.flush()
+        return solicitud
+
+    def listar(self, tipo: TipoSolicitud | None, estado: EstadoSolicitud | None, asignado_a: int | None,
+               limite: int, desplazamiento: int) -> list[Solicitud]:
+        stmt = select(Solicitud).order_by(Solicitud.creado_en.desc(), Solicitud.id.desc())
+        if tipo:
+            stmt = stmt.where(Solicitud.tipo == tipo)
+        if estado:
+            stmt = stmt.where(Solicitud.estado == estado)
+        if asignado_a is not None:
+            stmt = stmt.where(Solicitud.asignado_a == asignado_a)
+        return list(self.db.scalars(stmt.limit(limite).offset(desplazamiento)).unique())
+
+    # ---- avisos ----
+    def avisar(self, usuario_ids: list[int], titulo: str, solicitud_id: int | None) -> None:
+        for uid in dict.fromkeys(usuario_ids):
+            self.db.add(Aviso(usuario_id=uid, titulo=titulo[:150], solicitud_id=solicitud_id))
+
+    def avisos_de(self, usuario_id: int, solo_no_leidos: bool) -> list[Aviso]:
+        stmt = select(Aviso).where(Aviso.usuario_id == usuario_id).order_by(Aviso.creado_en.desc(), Aviso.id.desc())
+        if solo_no_leidos:
+            stmt = stmt.where(Aviso.leido.is_(False))
+        return list(self.db.scalars(stmt))
+
+    def obtener_aviso(self, aviso_id: int) -> Aviso | None:
+        return self.db.get(Aviso, aviso_id)
