@@ -14,6 +14,13 @@ class Permisos:
     AUDITORIA_VER = "auditoria:ver"
     DASHBOARD_VER = "dashboard:ver"
     CATALOGOS_GESTIONAR = "catalogos:gestionar"
+    EXPEDIENTES_VER = "expedientes:ver"
+    EXPEDIENTES_VALIDAR = "expedientes:validar"
+    RESENAS_MODERAR = "resenas:moderar"
+    CONTRATOS_GESTIONAR = "contratos:gestionar"
+    ENTREGAS_GESTIONAR = "entregas:gestionar"
+    AVISOS_ENVIAR = "avisos:enviar"
+    CUENTA_USAR = "cuenta:usar"
 
 
 DESCRIPCION_PERMISOS: dict[str, str] = {
@@ -29,13 +36,23 @@ DESCRIPCION_PERMISOS: dict[str, str] = {
     Permisos.AUDITORIA_VER: "Consultar la bitácora de auditoría",
     Permisos.DASHBOARD_VER: "Consultar indicadores y reportes",
     Permisos.CATALOGOS_GESTIONAR: "Administrar ciudades, zonas y amenidades",
+    Permisos.EXPEDIENTES_VER: "Consultar expedientes legales, subir y descargar documentos",
+    Permisos.EXPEDIENTES_VALIDAR: "Validar o rechazar documentos legales",
+    Permisos.RESENAS_MODERAR: "Aprobar o rechazar reseñas",
+    Permisos.CONTRATOS_GESTIONAR: "Administrar plantillas y generar borradores de contratos",
+    Permisos.ENTREGAS_GESTIONAR: "Registrar actas de entrega y recepción de inmuebles",
+    Permisos.AVISOS_ENVIAR: "Enviar avisos internos manuales",
+    Permisos.CUENTA_USAR: "Usar la cuenta de cliente: favoritos, búsquedas, reseñas y ofrecer propiedades",
 }
 
 ROL_ADMINISTRADOR = "administrador"
 ROL_ASESOR = "asesor"
+ROL_CLIENTE = "cliente"
+ROL_PROPIETARIO = "propietario"
 
+# Roles del personal (panel). El administrador tiene todo salvo el permiso de cuenta de cliente.
 PERMISOS_POR_ROL: dict[str, list[str]] = {
-    ROL_ADMINISTRADOR: list(DESCRIPCION_PERMISOS),
+    ROL_ADMINISTRADOR: [p for p in DESCRIPCION_PERMISOS if p != Permisos.CUENTA_USAR],
     ROL_ASESOR: [
         Permisos.PROPIEDADES_VER,
         Permisos.PROPIEDADES_EDITAR,
@@ -43,5 +60,15 @@ PERMISOS_POR_ROL: dict[str, list[str]] = {
         Permisos.PROSPECTOS_GESTIONAR,
         Permisos.CITAS_GESTIONAR,
         Permisos.DASHBOARD_VER,
+        Permisos.EXPEDIENTES_VER,
+        Permisos.CONTRATOS_GESTIONAR,
+        Permisos.ENTREGAS_GESTIONAR,
     ],
+}
+
+# Roles de quienes se registran en el sitio público. Solo tienen el permiso de cuenta, así que ningún
+# endpoint del panel les queda abierto.
+PERMISOS_POR_ROL_CUENTA: dict[str, list[str]] = {
+    ROL_CLIENTE: [Permisos.CUENTA_USAR],
+    ROL_PROPIETARIO: [Permisos.CUENTA_USAR],
 }

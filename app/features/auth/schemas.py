@@ -11,4 +11,6 @@ class Perfil(BaseModel):
     nombre: str
     email: str
     rol: str
+    telefono: str | None = None
+    email_verificado: bool = False
     permisos: list[str]

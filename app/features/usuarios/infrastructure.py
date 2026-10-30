@@ -36,6 +36,8 @@ class Usuario(TimestampMixin, Base):
     nombre: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(160), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(100))
+    telefono: Mapped[str | None] = mapped_column(String(20))
+    email_verificado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     activo: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     ultimo_acceso: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

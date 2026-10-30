@@ -2,15 +2,21 @@
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 import app.core.models  # noqa: F401  (registra todos los modelos)
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
+from app.core.storage import PUBLICO, AlmacenamientoLocal, get_almacenamiento
+from app.core.storage import router as archivos_router
 from app.features.auditoria.api import router as auditoria_router
 from app.features.agenda.api import router as agenda_router
 from app.features.auth.api import router as auth_router
 from app.features.catalogos.api import router as catalogos_router
+from app.features.cuentas.api import auth as cuentas_auth_router
+from app.features.cuentas.api import cuenta as cuenta_router
 from app.features.dashboard.api import router as dashboard_router
+from app.features.propiedades.api import medios as medios_router
 from app.features.propiedades.api import panel as propiedades_panel
 from app.features.propiedades.api import publico as propiedades_publico
 from app.features.prospectos.api import router as prospectos_router
@@ -28,17 +34,19 @@ API REST del panel administrativo y CRM de **MU Real Estate** (unidad inmobiliar
 * Los endpoints bajo `/publico` no requieren sesión y **nunca** devuelven datos internos
   (precio real, valor mínimo, propietario, comisión, dirección exacta ni notas).
 * Los cambios relevantes quedan registrados en la **bitácora de auditoría**.
+* Clientes y propietarios se registran en `POST /api/v1/auth/registro` y usan los endpoints bajo `/cuenta`.
 """
 
 TAGS = [
-    {"name": "Autenticación", "description": "Inicio de sesión y perfil del usuario."},
+    {"name": "Autenticación", "description": "Inicio de sesión, registro, verificación de correo y contraseña."},
+    {"name": "Mi cuenta", "description": "Favoritos y propiedades ofrecidas por clientes y propietarios."},
     {"name": "Usuarios, roles y permisos", "description": "Administración de usuarios (solo administrador)."},
     {"name": "Propiedades (panel)", "description": "Inventario, datos internos y publicación."},
     {"name": "Propiedades (público)", "description": "Buscador y ficha pública del sitio."},
     {"name": "Catálogos", "description": "Ciudades, zonas y amenidades para filtros."},
     {"name": "Solicitudes (público)", "description": "Contacto, visita y «Vende o renta con nosotros»."},
     {"name": "Centro de solicitudes", "description": "Asignación, atención y descarte de solicitudes."},
-    {"name": "Avisos internos", "description": "Avisos del usuario autenticado."},
+    {"name": "Avisos internos", "description": "Notificaciones del usuario autenticado (personal o cliente)."},
     {"name": "Prospectos (CRM)", "description": "Registro, seguimiento y etapas de los prospectos."},
     {"name": "Agenda de visitas", "description": "Agendar, confirmar, reprogramar y cancelar visitas (RN-05)."},
     {"name": "Dashboard y reportes", "description": "Indicadores de la operación y reportes por periodo."},
@@ -52,10 +60,15 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_cr
 register_exception_handlers(app)
 
 API_PREFIX = "/api/v1"
-for router in (auth_router, usuarios_router, propiedades_panel, propiedades_publico, catalogos_router,
-               solicitudes_publico, solicitudes_panel, avisos_router, prospectos_router, agenda_router,
-               dashboard_router, auditoria_router):
+for router in (auth_router, cuentas_auth_router, cuenta_router, usuarios_router, propiedades_panel,
+               propiedades_publico, medios_router, catalogos_router, solicitudes_publico, solicitudes_panel,
+               avisos_router, prospectos_router, agenda_router, dashboard_router, auditoria_router, archivos_router):
     app.include_router(router, prefix=API_PREFIX)
+
+# En desarrollo la API sirve las fotos públicas; en producción salen directo del bucket.
+almacen = get_almacenamiento()
+if isinstance(almacen, AlmacenamientoLocal):
+    app.mount("/archivos", StaticFiles(directory=almacen.raiz / PUBLICO), name="archivos")
 
 
 @app.get("/", include_in_schema=False)

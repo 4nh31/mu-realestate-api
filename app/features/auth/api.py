@@ -25,4 +25,5 @@ def login(db: DbSession, form: Annotated[OAuth2PasswordRequestForm, Depends()]):
 @router.get("/me", response_model=Perfil, summary="Perfil y permisos del usuario autenticado")
 def me(usuario: CurrentUser):
     return Perfil(id=usuario.id, nombre=usuario.nombre, email=usuario.email, rol=usuario.rol.nombre,
+                  telefono=usuario.telefono, email_verificado=usuario.email_verificado_en is not None,
                   permisos=sorted(usuario.permisos))

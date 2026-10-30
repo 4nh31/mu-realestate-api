@@ -1,4 +1,6 @@
 """Casos de uso del slice de usuarios."""
+from datetime import UTC, datetime
+
 from app.core.exceptions import Conflicto, NoEncontrado, ReglaDeNegocio
 from app.core.security import hash_password
 from app.features.auditoria.application import Auditor
@@ -13,7 +15,9 @@ def crear_usuario(repo: UsuarioRepository, auditor: Auditor, datos: UsuarioCrear
     rol = repo.obtener_rol(datos.rol)
     if rol is None:
         raise ReglaDeNegocio(f"El rol '{datos.rol}' no existe")
-    usuario = repo.agregar(Usuario(nombre=datos.nombre, email=email, rol=rol, password_hash=hash_password(datos.password)))
+    # El administrador da de alta al personal con su correo de trabajo: no necesita verificarlo.
+    usuario = repo.agregar(Usuario(nombre=datos.nombre, email=email, rol=rol, password_hash=hash_password(datos.password),
+                                   email_verificado_en=datetime.now(UTC)))
     auditor.registrar("usuarios", usuario.id, "crear", "rol", None, rol.nombre)
     return usuario
 

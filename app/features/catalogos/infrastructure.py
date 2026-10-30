@@ -29,6 +29,14 @@ class Amenidad(Base):
     nombre: Mapped[str] = mapped_column(String(80), unique=True)
 
 
+class Bien(Base):
+    """Bienes que se quedan con el inmueble (electrodomésticos, muebles, instalaciones...)."""
+    __tablename__ = "bienes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(80), unique=True)
+    categoria: Mapped[str] = mapped_column(String(60))
+
+
 class CatalogoRepository:
     def __init__(self, db: Session):
         self.db = db
@@ -44,3 +52,6 @@ class CatalogoRepository:
 
     def amenidades(self) -> list[Amenidad]:
         return list(self.db.scalars(select(Amenidad).order_by(Amenidad.nombre)))
+
+    def bienes(self) -> list[Bien]:
+        return list(self.db.scalars(select(Bien).order_by(Bien.categoria, Bien.id)))

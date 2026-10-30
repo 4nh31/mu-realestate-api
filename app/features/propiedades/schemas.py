@@ -29,6 +29,7 @@ class PropiedadBase(BaseModel):
     banos: Decimal | None = Field(default=None, ge=0, le=50, decimal_places=1)
     estacionamientos: int | None = Field(default=None, ge=0, le=50)
     superficie_m2: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    antiguedad_anios: int | None = Field(default=None, ge=0, le=200, description="0 = obra nueva")
     precio_publico: Decimal | None = Dinero
     moneda: str = Field(default="MXN", pattern="^(MXN|USD)$")
 
@@ -36,7 +37,9 @@ class PropiedadBase(BaseModel):
 class PropiedadCrear(PropiedadBase):
     disponibilidad: Disponibilidad = Disponibilidad.DISPONIBLE
     asesor_id: int | None = None
+    destacada: bool = False
     amenidad_ids: list[int] = []
+    bien_ids: list[int] = []
 
 
 class PropiedadActualizar(BaseModel):
@@ -49,15 +52,19 @@ class PropiedadActualizar(BaseModel):
     banos: Decimal | None = Field(default=None, ge=0, le=50, decimal_places=1)
     estacionamientos: int | None = Field(default=None, ge=0, le=50)
     superficie_m2: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+    antiguedad_anios: int | None = Field(default=None, ge=0, le=200)
     precio_publico: Decimal | None = Dinero
     moneda: str | None = Field(default=None, pattern="^(MXN|USD)$")
     disponibilidad: Disponibilidad | None = None
     asesor_id: int | None = None
+    destacada: bool | None = None
     amenidad_ids: list[int] | None = None
+    bien_ids: list[int] | None = None
 
 
 class MedioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+    id: int
     tipo: TipoMedio
     url: str
     orden: int
@@ -83,10 +90,13 @@ class PropiedadPublica(BaseModel):
     banos: Decimal | None
     estacionamientos: int | None
     superficie_m2: Decimal | None
+    antiguedad_anios: int | None
     precio_publico: Decimal | None
     moneda: str
     disponibilidad: Disponibilidad
+    destacada: bool
     amenidades: list[str]
+    bienes: list[str]
     medios: list[MedioOut]
 
     @classmethod
@@ -96,8 +106,9 @@ class PropiedadPublica(BaseModel):
             ubicacion=UbicacionOut(zona_id=p.zona_id, zona=p.zona.nombre if p.zona else None,
                                    ciudad=p.zona.ciudad.nombre if p.zona else None),
             recamaras=p.recamaras, banos=p.banos, estacionamientos=p.estacionamientos, superficie_m2=p.superficie_m2,
-            precio_publico=p.precio_publico, moneda=p.moneda, disponibilidad=p.disponibilidad,
-            amenidades=sorted(a.nombre for a in p.amenidades), medios=[MedioOut.model_validate(m) for m in p.medios],
+            antiguedad_anios=p.antiguedad_anios, precio_publico=p.precio_publico, moneda=p.moneda,
+            disponibilidad=p.disponibilidad, destacada=p.destacada, amenidades=sorted(a.nombre for a in p.amenidades),
+            bienes=sorted(b.nombre for b in p.bienes), medios=[MedioOut.model_validate(m) for m in p.medios],
         )
 
 
@@ -106,6 +117,10 @@ class PropiedadPanel(PropiedadPublica):
     origen: Origen
     asesor_id: int | None
     activo: bool
+    motivo_rechazo: str | None
+    revisado_por: int | None
+    revisado_en: datetime | None
+    publicada_en: datetime | None
     creado_en: datetime
     actualizado_en: datetime
 
@@ -113,7 +128,14 @@ class PropiedadPanel(PropiedadPublica):
     def desde(cls, p) -> "PropiedadPanel":
         base = PropiedadPublica.desde(p).model_dump()
         return cls(**base, estado_publicacion=p.estado_publicacion, origen=p.origen, asesor_id=p.asesor_id,
-                   activo=p.activo, creado_en=p.creado_en, actualizado_en=p.actualizado_en)
+                   activo=p.activo, motivo_rechazo=p.motivo_rechazo, revisado_por=p.revisado_por,
+                   revisado_en=p.revisado_en, publicada_en=p.publicada_en, creado_en=p.creado_en,
+                   actualizado_en=p.actualizado_en)
+
+
+class MedioActualizar(BaseModel):
+    orden: int | None = Field(default=None, ge=0, le=100)
+    es_portada: bool | None = Field(default=None, description="true la vuelve portada y quita la anterior")
 
 
 class CambioPublicacion(BaseModel):

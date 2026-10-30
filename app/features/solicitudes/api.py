@@ -1,18 +1,19 @@
 """Endpoints del centro de solicitudes y avisos internos."""
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 
 from app.core.deps import RESPUESTAS_PROTEGIDAS, CurrentUser, DbSession, require_permission
-from app.core.exceptions import NoEncontrado
+from app.core.exceptions import NoEncontrado, ReglaDeNegocio
 from app.features.auditoria.application import Auditor
 from app.features.solicitudes import application as casos
 from app.features.solicitudes.domain import EstadoSolicitud, TipoSolicitud
 from app.features.solicitudes.infrastructure import SolicitudRepository
-from app.features.solicitudes.schemas import (AsignacionIn, AtencionIn, AvisoOut, DescarteIn, OfertaPropiedadIn,
-                                              OfertaRecibida, SolicitudOut, SolicitudPublicaIn)
+from app.features.notificaciones.application import Notificador
+from app.features.solicitudes.schemas import (AsignacionIn, AtencionIn, AvisoIn, AvisoOut, AvisosMarcados, DescarteIn,
+                                              OfertaPropiedadIn, OfertaRecibida, SolicitudOut, SolicitudPublicaIn)
 from app.features.usuarios.domain import Permisos
-from app.features.usuarios.infrastructure import Usuario
+from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 
 publico = APIRouter(prefix="/publico", tags=["Solicitudes (público)"])
 panel = APIRouter(prefix="/solicitudes", tags=["Centro de solicitudes"], responses=RESPUESTAS_PROTEGIDAS)
@@ -75,7 +76,7 @@ def descartar(solicitud_id: int, datos: DescarteIn, db: DbSession, actor: Gestor
     return _responder(db, casos.descartar_solicitud(SolicitudRepository(db), Auditor(db, actor.id), solicitud_id, datos))
 
 
-@avisos.get("", response_model=list[AvisoOut], summary="Consultar mis avisos internos")
+@avisos.get("", response_model=list[AvisoOut], summary="Consultar mis avisos")
 def mis_avisos(db: DbSession, usuario: CurrentUser, solo_no_leidos: bool = False):
     return SolicitudRepository(db).avisos_de(usuario.id, solo_no_leidos)
 
@@ -86,3 +87,32 @@ def leido(aviso_id: int, db: DbSession, usuario: CurrentUser):
     db.commit()
     db.refresh(a)
     return a
+
+
+@avisos.patch("/leidos", response_model=AvisosMarcados, summary="Marcar todos mis avisos como leídos")
+def todos_leidos(db: DbSession, usuario: CurrentUser):
+    n = SolicitudRepository(db).marcar_todos_leidos(usuario.id)
+    db.commit()
+    return AvisosMarcados(actualizados=n)
+
+
+@avisos.post("", status_code=status.HTTP_201_CREATED, response_model=AvisosMarcados,
+             summary="Enviar un aviso interno a un usuario o a todos los de un rol")
+def enviar_aviso(datos: AvisoIn, db: DbSession, tareas: BackgroundTasks,
+                 actor: Annotated[Usuario, Depends(require_permission(Permisos.AVISOS_ENVIAR))]):
+    usuarios = UsuarioRepository(db)
+    if (datos.usuario_id is None) == (datos.rol is None):
+        raise ReglaDeNegocio("Indique un usuario o un rol de destino, no ambos")
+    if datos.usuario_id is not None:
+        destino = usuarios.obtener(datos.usuario_id)
+        if destino is None or not destino.activo:
+            raise NoEncontrado("Usuario no encontrado")
+        ids = [destino.id]
+    else:
+        ids = [u.id for u in usuarios.listar(activo=True) if u.rol.nombre == datos.rol]
+        if not ids:
+            raise ReglaDeNegocio(f"No hay usuarios activos con el rol '{datos.rol}'")
+    Notificador(db, tareas, actor.id).notificar(ids, datos.tipo, datos.titulo, datos.mensaje, datos.enlace,
+                                                datos.por_correo)
+    db.commit()
+    return AvisosMarcados(actualizados=len(ids))

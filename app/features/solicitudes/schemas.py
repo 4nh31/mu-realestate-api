@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.features.notificaciones.domain import TipoAviso
 from app.features.propiedades.domain import Operacion, TipoPropiedad
 from app.features.solicitudes.domain import EstadoSolicitud, TipoSolicitud
 
@@ -75,7 +76,27 @@ class DescarteIn(BaseModel):
 class AvisoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    tipo: TipoAviso
     titulo: str
+    mensaje: str | None
+    enlace: str | None
     solicitud_id: int | None
+    autor_id: int | None
+    por_correo: bool
     leido: bool
     creado_en: datetime
+
+
+class AvisoIn(BaseModel):
+    """Aviso interno manual: a un usuario concreto o a todos los de un rol."""
+    tipo: TipoAviso = TipoAviso.INTERNO
+    titulo: str = Field(min_length=3, max_length=150)
+    mensaje: str | None = Field(default=None, max_length=2000)
+    enlace: str | None = Field(default=None, max_length=255, pattern="^/")
+    usuario_id: int | None = None
+    rol: str | None = Field(default=None, examples=["asesor"])
+    por_correo: bool = False
+
+
+class AvisosMarcados(BaseModel):
+    actualizados: int

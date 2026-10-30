@@ -2,13 +2,15 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy import (Boolean, CheckConstraint, Column, ForeignKey, Index, Numeric, SmallInteger, String,
-                        Table, Text, func, select)
+from datetime import datetime
+
+from sqlalchemy import (Boolean, CheckConstraint, Column, DateTime, ForeignKey, Index, Numeric, SmallInteger,
+                        String, Table, Text, func, or_, select)
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, selectinload
 
 from app.core.database import Base, TimestampMixin
 from app.core.types import pg_enum
-from app.features.catalogos.infrastructure import Amenidad, Ciudad, Zona
+from app.features.catalogos.infrastructure import Amenidad, Bien, Ciudad, Zona
 from app.features.propiedades.domain import (Disponibilidad, EstadoPublicacion, Operacion, Origen,
                                              TipoMedio, TipoPropiedad)
 
@@ -19,6 +21,13 @@ propiedad_amenidades = Table(
     Column("amenidad_id", ForeignKey("amenidades.id", ondelete="CASCADE"), primary_key=True),
 )
 
+propiedad_bienes = Table(
+    "propiedad_bienes",
+    Base.metadata,
+    Column("propiedad_id", ForeignKey("propiedades.id", ondelete="CASCADE"), primary_key=True),
+    Column("bien_id", ForeignKey("bienes.id", ondelete="CASCADE"), primary_key=True),
+)
+
 
 class Propietario(TimestampMixin, Base):
     __tablename__ = "propietarios"
@@ -26,6 +35,8 @@ class Propietario(TimestampMixin, Base):
     nombre: Mapped[str] = mapped_column(String(120))
     telefono: Mapped[str | None] = mapped_column(String(20))
     email: Mapped[str | None] = mapped_column(String(160))
+    # Cuenta del sitio con la que el dueño ofreció su propiedad (nulo si la registró el personal).
+    usuario_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"), unique=True)
 
 
 class Propiedad(TimestampMixin, Base):
@@ -41,6 +52,7 @@ class Propiedad(TimestampMixin, Base):
     banos: Mapped[Decimal | None] = mapped_column(Numeric(3, 1))
     estacionamientos: Mapped[int | None] = mapped_column(SmallInteger)
     superficie_m2: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    antiguedad_anios: Mapped[int | None] = mapped_column(SmallInteger)
     precio_publico: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
     moneda: Mapped[str] = mapped_column(String(3), default="MXN", server_default="MXN")
     estado_publicacion: Mapped[EstadoPublicacion] = mapped_column(
@@ -53,9 +65,16 @@ class Propiedad(TimestampMixin, Base):
                                            server_default=Origen.INTERNA.value)
     asesor_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     activo: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    destacada: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Moderación: quién y cuándo decidió, y por qué se rechazó (RN-09).
+    motivo_rechazo: Mapped[str | None] = mapped_column(Text)
+    revisado_por: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    revisado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    publicada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     zona: Mapped[Zona | None] = relationship(lazy="joined")
     amenidades: Mapped[list[Amenidad]] = relationship(secondary=propiedad_amenidades, lazy="selectin")
+    bienes: Mapped[list[Bien]] = relationship(secondary=propiedad_bienes, lazy="selectin")
     medios: Mapped[list["Medio"]] = relationship(back_populates="propiedad", order_by="Medio.orden",
                                                  lazy="selectin", cascade="all, delete-orphan")
     datos_internos: Mapped["DatosInternos | None"] = relationship(back_populates="propiedad", uselist=False,
@@ -63,9 +82,13 @@ class Propiedad(TimestampMixin, Base):
 
     __table_args__ = (
         CheckConstraint("precio_publico IS NULL OR precio_publico >= 0", name="precio_publico_no_negativo"),
+        CheckConstraint("antiguedad_anios IS NULL OR antiguedad_anios >= 0", name="antiguedad_no_negativa"),
+        CheckConstraint("estado_publicacion <> 'rechazada' OR motivo_rechazo IS NOT NULL",
+                        name="rechazo_con_motivo"),
         # Índice compuesto para el buscador público (RN-02 + filtros más frecuentes).
         Index("ix_propiedades_busqueda", "estado_publicacion", "activo", "operacion", "tipo", "zona_id"),
         Index("ix_propiedades_precio_publico", "precio_publico"),
+        Index("ix_propiedades_origen_estado", "origen", "estado_publicacion"),
     )
 
 
@@ -114,6 +137,8 @@ class FiltrosBusqueda:
     precio_max: Decimal | None = None
     estacionamientos_min: int | None = None
     amenidad_ids: list[int] | None = None
+    q: str | None = None
+    destacada: bool | None = None
 
 
 class PropiedadRepository:
@@ -151,6 +176,13 @@ class PropiedadRepository:
             stmt = stmt.where(Propiedad.precio_publico <= f.precio_max)
         for amenidad_id in f.amenidad_ids or []:
             stmt = stmt.where(Propiedad.amenidades.any(Amenidad.id == amenidad_id))
+        if f.destacada is not None:
+            stmt = stmt.where(Propiedad.destacada.is_(f.destacada))
+        if f.q:
+            patron = f"%{f.q.strip()}%"
+            stmt = stmt.where(or_(Propiedad.titulo.ilike(patron), Propiedad.clave.ilike(patron),
+                                  Propiedad.zona.has(Zona.nombre.ilike(patron)),
+                                  Propiedad.zona.has(Zona.ciudad.has(Ciudad.nombre.ilike(patron)))))
         return stmt
 
     def buscar_publicas(self, f: FiltrosBusqueda, limite: int, desplazamiento: int) -> tuple[list[Propiedad], int]:
@@ -163,8 +195,11 @@ class PropiedadRepository:
         return list(filas.unique()), total or 0
 
     def listar_panel(self, f: FiltrosBusqueda, estado: EstadoPublicacion | None, disponibilidad: Disponibilidad | None,
-                     incluir_inactivas: bool, limite: int, desplazamiento: int) -> tuple[list[Propiedad], int]:
+                     incluir_inactivas: bool, limite: int, desplazamiento: int,
+                     origen: Origen | None = None) -> tuple[list[Propiedad], int]:
         base = self._aplicar_filtros(select(Propiedad), f)
+        if origen:
+            base = base.where(Propiedad.origen == origen)
         if estado:
             base = base.where(Propiedad.estado_publicacion == estado)
         if disponibilidad:
@@ -198,6 +233,18 @@ class PropiedadRepository:
 
     def amenidades(self, ids: list[int]) -> list[Amenidad]:
         return list(self.db.scalars(select(Amenidad).where(Amenidad.id.in_(ids)))) if ids else []
+
+    def bienes(self, ids: list[int]) -> list[Bien]:
+        return list(self.db.scalars(select(Bien).where(Bien.id.in_(ids)))) if ids else []
+
+    def obtener_medio(self, medio_id: int) -> Medio | None:
+        return self.db.get(Medio, medio_id)
+
+    def propietario_usuario_id(self, propiedad_id: int) -> int | None:
+        """Cuenta del sitio del dueño, para avisarle de la moderación."""
+        stmt = (select(Propietario.usuario_id).join(DatosInternos, DatosInternos.propietario_id == Propietario.id)
+                .where(DatosInternos.propiedad_id == propiedad_id))
+        return self.db.scalar(stmt)
 
 
 __all__ = ["Ciudad", "DatosInternos", "FiltrosBusqueda", "Medio", "Propiedad", "PropiedadRepository", "Propietario"]

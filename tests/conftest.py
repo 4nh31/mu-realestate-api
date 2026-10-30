@@ -1,5 +1,6 @@
 """Fixtures: base de datos PostgreSQL de prueba migrada con Alembic y cliente HTTP."""
 import os
+import tempfile
 
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy import text as _text
@@ -36,6 +37,8 @@ TEST_URL = _url_de_pruebas()
 _crear_base_si_no_existe(TEST_URL)
 os.environ["DATABASE_URL"] = TEST_URL
 os.environ["JWT_SECRET_KEY"] = "clave-de-pruebas-con-al-menos-32-caracteres"
+os.environ["STORAGE_DIR"] = tempfile.mkdtemp(prefix="mu-storage-")
+os.environ["SMTP_HOST"] = ""
 get_settings.cache_clear()
 
 import pytest
@@ -45,11 +48,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.core.database import SessionLocal, engine
+from app.core.email import BANDEJA_DESARROLLO
 from app.core.security import hash_password
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 from app.main import app
 
-TABLAS_DATOS = ["auditoria", "avisos", "solicitudes", "seguimientos", "citas", "prospecto_propiedades", "prospectos", "medios",
+TABLAS_DATOS = ["favoritos", "codigos_verificacion", "propiedad_bienes", "auditoria", "avisos", "solicitudes", "seguimientos", "citas", "prospecto_propiedades", "prospectos", "medios",
                 "propiedad_amenidades", "datos_internos", "propiedades", "propietarios", "usuarios"]
 
 
@@ -64,6 +68,7 @@ def esquema():
 @pytest.fixture(autouse=True)
 def limpiar():
     yield
+    BANDEJA_DESARROLLO.clear()
     with engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {', '.join(TABLAS_DATOS)} RESTART IDENTITY CASCADE"))
 

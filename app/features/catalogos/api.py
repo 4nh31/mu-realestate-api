@@ -41,3 +41,22 @@ def zonas(db: DbSession, ciudad_id: int | None = None):
 @router.get("/amenidades", response_model=list[AmenidadOut], summary="Amenidades")
 def amenidades(db: DbSession):
     return CatalogoRepository(db).amenidades()
+
+
+class BienOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nombre: str
+
+
+class CategoriaBienesOut(BaseModel):
+    categoria: str
+    bienes: list[BienOut]
+
+
+@router.get("/bienes", response_model=list[CategoriaBienesOut], summary="Bienes incluidos, agrupados por categoría")
+def bienes(db: DbSession):
+    grupos: dict[str, list] = {}
+    for b in CatalogoRepository(db).bienes():
+        grupos.setdefault(b.categoria, []).append(b)
+    return [CategoriaBienesOut(categoria=c, bienes=[BienOut.model_validate(b) for b in bs]) for c, bs in grupos.items()]

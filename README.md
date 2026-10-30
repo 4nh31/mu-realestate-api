@@ -142,11 +142,12 @@ Abre http://localhost:8000/docs (la raíz http://localhost:8000 también te redi
 
 | Módulo | Prefijo | Qué hace |
 |---|---|---|
-| Autenticación | `/api/v1/auth` | Inicio de sesión (JWT) y usuario actual |
+| Autenticación | `/api/v1/auth` | Inicio de sesión (JWT), usuario actual, registro de clientes, verificación de correo y restablecer contraseña |
+| Mi cuenta | `/api/v1/cuenta` | Favoritos del cliente y propiedades que el dueño ofrece con fotos (estado y motivo de rechazo) |
 | Usuarios | `/api/v1/usuarios` | Alta, edición y desactivación de usuarios |
-| Propiedades | `/api/v1/propiedades` | Inventario, datos internos, publicación y medios |
+| Propiedades | `/api/v1/propiedades`, `/api/v1/medios` | Inventario, datos internos, moderación (guarda el motivo de rechazo), subida y orden de fotos |
 | Sitio público | `/api/v1/publico` | Listado público, solicitudes de clientes y ofertas de propietarios |
-| Solicitudes y avisos | `/api/v1/solicitudes`, `/api/v1/avisos` | Asignar, atender o descartar solicitudes; avisos internos |
+| Solicitudes y avisos | `/api/v1/solicitudes`, `/api/v1/avisos` | Asignar, atender o descartar solicitudes; avisos para personal y clientes, avisos manuales y marcar todo como leído |
 | Prospectos (CRM) | `/api/v1/prospectos` | Registro, búsqueda, etapas y seguimientos |
 | Agenda | `/api/v1/citas` | Agendar, confirmar, reprogramar, cancelar y registrar visitas |
 | Dashboard | `/api/v1/dashboard` | Indicadores y reporte por periodo (JSON o CSV) |
@@ -234,7 +235,16 @@ Para agregar un módulo nuevo, copia la estructura de `features/propiedades/`, r
 | Rol | Puede |
 |---|---|
 | administrador | Todo: usuarios, datos internos de propiedades, publicación y auditoría |
-| asesor | Ver/editar propiedades (sin datos internos), solicitudes, prospectos, citas y dashboard |
+| asesor | Ver/editar propiedades (sin datos internos), solicitudes, prospectos, citas, dashboard, expedientes (consulta), contratos y entregas |
+| cliente | Se registra en el sitio: favoritos y su cuenta (`cuenta:usar`); no entra al panel |
+| propietario | Igual que cliente; además ofrece propiedades con fotos y sigue su revisión |
+
+El administrador no tiene `cuenta:usar`: las cuentas del sitio y las del personal están separadas.
+
+### Archivos y correo
+
+* **Archivos:** con `STORAGE_BACKEND=local` las fotos se guardan en `STORAGE_DIR` y la API las sirve en `/archivos/...`. En producción usa `STORAGE_BACKEND=s3` con DigitalOcean Spaces (`S3_*`). Solo se aceptan JPG, PNG y WEBP (se revisa el contenido real, no la extensión) de hasta `MAX_UPLOAD_MB`.
+* **Correo:** con `SMTP_HOST` vacío los correos (códigos de verificación, avisos) solo se escriben en el log de la API. Para enviarlos de verdad llena las variables `SMTP_*`.
 
 ---
 
