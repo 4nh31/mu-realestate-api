@@ -15,8 +15,8 @@ from app.core.config import get_settings
 from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.features.catalogos.infrastructure import Amenidad, Bien, Zona
-from app.features.propiedades.domain import EstadoPublicacion, Operacion, TipoPropiedad
-from app.features.propiedades.infrastructure import Propiedad, PropiedadRepository
+from app.features.propiedades.domain import EstadoPublicacion, Operacion, TipoMedio, TipoPropiedad
+from app.features.propiedades.infrastructure import Medio, Propiedad, PropiedadRepository
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 
 PASSWORD = "Demo1234"
@@ -32,6 +32,15 @@ PROPIEDADES = [
     ("Terreno residencial en Polígono Sur", Operacion.VENTA, TipoPropiedad.TERRENO, "Polígono Sur",
      None, None, None, "250", None, "1450000", False, [], []),
 ]
+
+# Fotos del diseño (Unsplash). Son URLs externas, así que no se guardan en el almacenamiento.
+FOTOS = [f"https://images.unsplash.com/photo-{f}?w=1200&h=700&fit=crop&auto=format" for f in (
+    "1613490493576-7fde63acd811", "1724582586529-62622e50c0b3", "1600210491369-e753d80a41f3",
+    "1665249934445-1de680641f50", "1628592102751-ba83b0314276", "1670589953882-b94c9cb380f5",
+    "1706855203772-c249b75fe016", "1564078516393-cf04bd966897", "1628012209120-d9db7abf7eab",
+    "1679364297777-1db77b6199be", "1600596542815-ffad4c1539a9", "1600607687939-ce8a6c25118c",
+)]
+FOTOS_POR_PROPIEDAD = 3
 
 
 def main() -> None:
@@ -63,6 +72,16 @@ def main() -> None:
                 amenidades=list(db.scalars(select(Amenidad).where(Amenidad.nombre.in_(amen)))),
                 bienes=list(db.scalars(select(Bien).where(Bien.nombre.in_(bienes)))),
             ))
+        db.flush()
+        # Tres fotos por propiedad de demostración que todavía no tenga ninguna.
+        demo = db.scalars(select(Propiedad).where(Propiedad.titulo.in_([p[0] for p in PROPIEDADES]))
+                          .order_by(Propiedad.id))
+        for n, propiedad in enumerate(demo):
+            if propiedad.medios:
+                continue
+            for i in range(FOTOS_POR_PROPIEDAD):
+                url = FOTOS[(n * FOTOS_POR_PROPIEDAD + i) % len(FOTOS)]
+                propiedad.medios.append(Medio(tipo=TipoMedio.FOTO, url=url, orden=i, es_portada=i == 0))
         db.commit()
     print("Datos de demostración listos. Personal: " + ", ".join(e for e, _, _ in PERSONAL)
           + f" (contraseña {PASSWORD}).")
