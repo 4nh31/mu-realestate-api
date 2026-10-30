@@ -1,4 +1,6 @@
 """Punto de entrada de la API de MU Real Estate."""
+import logging
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +28,8 @@ from app.features.solicitudes.api import publico as solicitudes_publico
 from app.features.usuarios.api import router as usuarios_router
 
 settings = get_settings()
+# Mensajes propios de la API (p. ej. los correos sin SMTP en desarrollo) en la consola.
+logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s - %(message)s")
 
 DESCRIPCION = """
 API REST del panel administrativo y CRM de **MU Real Estate** (unidad inmobiliaria de Cano & Asociados).

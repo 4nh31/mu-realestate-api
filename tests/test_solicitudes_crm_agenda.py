@@ -54,6 +54,15 @@ def test_solicitud_sobre_propiedad_no_publicada_responde_404(client, admin):
     assert r.status_code == 404
 
 
+def test_contacto_general_sin_propiedad_y_visita_sin_propiedad_falla(client, admin):
+    r = client.post(f"{API}/publico/solicitudes", json={"tipo": "contacto", "nombre": "Ana Pérez",
+                                                         "email": "ana@correo.mx", "mensaje": "Busco casa"})
+    assert r.status_code == 201 and r.json()["propiedad_id"] is None
+    r = client.post(f"{API}/publico/solicitudes", json={"tipo": "visita", "nombre": "Ana Pérez",
+                                                         "email": "ana@correo.mx"})
+    assert r.status_code == 422
+
+
 def test_solicitud_sin_telefono_ni_correo_responde_422(client, admin):
     pid = propiedad_publicada(client, admin)
     r = client.post(f"{API}/publico/solicitudes", json={"tipo": "contacto", "propiedad_id": pid, "nombre": "Ana Pérez"})

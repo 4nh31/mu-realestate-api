@@ -203,3 +203,17 @@ def test_avisos_manuales_y_marcar_todos_leidos(client, admin, asesor):
     assert aviso["tipo"] == "interno" and aviso["autor_id"] is not None
     assert client.patch(f"{API}/avisos/leidos", headers=asesor).json()["actualizados"] == 1
     assert client.get(f"{API}/avisos", headers=asesor, params={"solo_no_leidos": True}).json() == []
+
+
+# ---- Apoyos para el panel ----
+def test_personal_notas_y_bitacora_con_nombres(client, admin, asesor):
+    personal = client.get(f"{API}/usuarios/personal", headers=asesor).json()
+    assert {p["rol"] for p in personal} == {"administrador", "asesor"}
+    s = client.post(f"{API}/publico/solicitudes", json={"tipo": "contacto", "nombre": "Ana Pérez",
+                                                         "email": "ana@correo.mx"}).json()
+    r = client.patch(f"{API}/solicitudes/{s['id']}/notas", headers=asesor, json={"notas": "Llamar el lunes"})
+    assert r.status_code == 200 and r.json()["notas"] == "Llamar el lunes"
+    nueva(client, admin, titulo="Casa para la bitácora")
+    registro = client.get(f"{API}/auditoria", headers=admin, params={"entidad": "propiedades"}).json()[0]
+    assert registro["usuario_nombre"] == "admin" and registro["entidad_titulo"] == "Casa para la bitácora"
+    assert registro["entidad_zona"] == "Residencial Cumbres"

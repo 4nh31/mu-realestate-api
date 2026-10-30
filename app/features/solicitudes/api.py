@@ -11,7 +11,8 @@ from app.features.solicitudes.domain import EstadoSolicitud, TipoSolicitud
 from app.features.solicitudes.infrastructure import SolicitudRepository
 from app.features.notificaciones.application import Notificador
 from app.features.solicitudes.schemas import (AsignacionIn, AtencionIn, AvisoIn, AvisoOut, AvisosMarcados, DescarteIn,
-                                              OfertaPropiedadIn, OfertaRecibida, SolicitudOut, SolicitudPublicaIn)
+                                              NotasIn, OfertaPropiedadIn, OfertaRecibida, SolicitudOut,
+                                              SolicitudPublicaIn)
 from app.features.usuarios.domain import Permisos
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
 
@@ -74,6 +75,12 @@ def atender(solicitud_id: int, datos: AtencionIn, db: DbSession, actor: Gestor):
 @panel.patch("/{solicitud_id}/descarte", response_model=SolicitudOut, summary="Descartar solicitud con motivo")
 def descartar(solicitud_id: int, datos: DescarteIn, db: DbSession, actor: Gestor):
     return _responder(db, casos.descartar_solicitud(SolicitudRepository(db), Auditor(db, actor.id), solicitud_id, datos))
+
+
+@panel.patch("/{solicitud_id}/notas", response_model=SolicitudOut, summary="Guardar notas internas de seguimiento")
+def guardar_notas(solicitud_id: int, datos: NotasIn, db: DbSession, actor: Gestor):
+    return _responder(db, casos.guardar_notas(SolicitudRepository(db), Auditor(db, actor.id), solicitud_id,
+                                              datos.notas))
 
 
 @avisos.get("", response_model=list[AvisoOut], summary="Consultar mis avisos")

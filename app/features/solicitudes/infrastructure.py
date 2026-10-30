@@ -25,6 +25,7 @@ class Solicitud(Base):
     asignado_a: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     prospecto_id: Mapped[int | None] = mapped_column(ForeignKey("prospectos.id", ondelete="SET NULL"))
     motivo_descarte: Mapped[str | None] = mapped_column(Text)
+    notas: Mapped[str | None] = mapped_column(Text)
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     atendido_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

@@ -8,7 +8,7 @@ from app.features.auditoria.application import Auditor
 from app.features.usuarios import application as casos
 from app.features.usuarios.domain import Permisos
 from app.features.usuarios.infrastructure import Usuario, UsuarioRepository
-from app.features.usuarios.schemas import RolOut, UsuarioActualizar, UsuarioCrear, UsuarioOut
+from app.features.usuarios.schemas import PersonalOut, RolOut, UsuarioActualizar, UsuarioCrear, UsuarioOut
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios, roles y permisos"], responses=RESPUESTAS_PROTEGIDAS)
 Admin = Annotated[Usuario, Depends(require_permission(Permisos.USUARIOS_GESTIONAR))]
@@ -31,6 +31,12 @@ def actualizar_usuario(usuario_id: int, datos: UsuarioActualizar, db: DbSession,
     usuario = casos.actualizar_usuario(UsuarioRepository(db), Auditor(db, actor.id), usuario_id, datos, actor.id)
     db.commit()
     return UsuarioOut.desde(usuario)
+
+
+@router.get("/personal", response_model=list[PersonalOut],
+            summary="Personal activo que puede atender solicitudes (para asignar)")
+def listar_personal(db: DbSession, _: Annotated[Usuario, Depends(require_permission(Permisos.PROPIEDADES_VER))]):
+    return [PersonalOut.desde(u) for u in UsuarioRepository(db).con_permiso(Permisos.SOLICITUDES_GESTIONAR)]
 
 
 @router.get("/roles", response_model=list[RolOut], summary="Listar roles con sus permisos")

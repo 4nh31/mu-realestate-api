@@ -29,6 +29,18 @@ class UsuarioActualizar(BaseModel):
     password: str | None = Field(default=None, min_length=8, max_length=72)
 
 
+class PersonalOut(BaseModel):
+    """Datos mínimos del personal para asignar solicitudes, propiedades y citas."""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nombre: str
+    rol: str
+
+    @classmethod
+    def desde(cls, u) -> "PersonalOut":
+        return cls(id=u.id, nombre=u.nombre, rol=u.rol.nombre)
+
+
 class UsuarioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

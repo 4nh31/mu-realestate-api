@@ -29,16 +29,22 @@ def _avisar_a(repo: SolicitudRepository, permiso: str, titulo: str, solicitud_id
 
 
 def recibir_solicitud(repo: SolicitudRepository, datos: SolicitudPublicaIn) -> Solicitud:
-    """Contacto o visita enviados desde la ficha pública; solo sobre propiedades publicadas (RN-02)."""
+    """Contacto o visita enviados desde el sitio; si hay propiedad, debe estar publicada (RN-02)."""
     if datos.tipo == TipoSolicitud.VENDER_RENTAR:
         raise ReglaDeNegocio("Para ofrecer una propiedad use el formulario «Vende o renta con nosotros»")
     domain.validar_contacto(datos.telefono, datos.email)
-    propiedad = repo.db.get(Propiedad, datos.propiedad_id)
-    if propiedad is None or not propiedad.activo or propiedad.estado_publicacion != EstadoPublicacion.PUBLICADA:
-        raise NoEncontrado("Propiedad no encontrada")
+    if datos.propiedad_id is None:
+        if datos.tipo == TipoSolicitud.VISITA:
+            raise ReglaDeNegocio("Indique la propiedad que desea visitar")
+        referencia = "contacto general"
+    else:
+        propiedad = repo.db.get(Propiedad, datos.propiedad_id)
+        if propiedad is None or not propiedad.activo or propiedad.estado_publicacion != EstadoPublicacion.PUBLICADA:
+            raise NoEncontrado("Propiedad no encontrada")
+        referencia = propiedad.clave
     solicitud = repo.agregar(Solicitud(**datos.model_dump()))
     _avisar_a(repo, Permisos.SOLICITUDES_GESTIONAR,
-              f"Nueva solicitud de {datos.tipo.value}: {propiedad.clave} · {datos.nombre}", solicitud.id)
+              f"Nueva solicitud de {datos.tipo.value}: {referencia} · {datos.nombre}", solicitud.id)
     return solicitud
 
 
@@ -102,6 +108,15 @@ def descartar_solicitud(repo: SolicitudRepository, auditor: Auditor, solicitud_i
     solicitud.estado = EstadoSolicitud.DESCARTADA
     solicitud.motivo_descarte = datos.motivo
     solicitud.atendido_en = datetime.now(UTC)
+    return solicitud
+
+
+def guardar_notas(repo: SolicitudRepository, auditor: Auditor, solicitud_id: int, notas: str) -> Solicitud:
+    solicitud = _obtener(repo, solicitud_id)
+    notas = notas.strip() or None
+    if notas != solicitud.notas:
+        auditor.registrar(ENTIDAD, solicitud.id, "actualizar", "notas", solicitud.notas, notas)
+        solicitud.notas = notas
     return solicitud
 
 

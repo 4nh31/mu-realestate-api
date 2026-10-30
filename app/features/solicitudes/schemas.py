@@ -9,9 +9,9 @@ from app.features.solicitudes.domain import EstadoSolicitud, TipoSolicitud
 
 
 class SolicitudPublicaIn(BaseModel):
-    """Solicitud de contacto o de visita enviada desde la ficha pública de una propiedad."""
+    """Solicitud de contacto o de visita. El contacto general del sitio va sin propiedad."""
     tipo: TipoSolicitud = Field(description="contacto o visita")
-    propiedad_id: int
+    propiedad_id: int | None = Field(default=None, description="Obligatoria para visitas")
     nombre: str = Field(min_length=3, max_length=120)
     telefono: str | None = Field(default=None, max_length=20)
     email: EmailStr | None = None
@@ -57,6 +57,7 @@ class SolicitudOut(BaseModel):
     asignado_a: int | None
     prospecto_id: int | None
     motivo_descarte: str | None
+    notas: str | None
     creado_en: datetime
     atendido_en: datetime | None
 
@@ -67,6 +68,10 @@ class AsignacionIn(BaseModel):
 
 class AtencionIn(BaseModel):
     crear_prospecto: bool = Field(default=True, description="Registrar al solicitante como prospecto en el CRM")
+
+
+class NotasIn(BaseModel):
+    notas: str = Field(max_length=2000)
 
 
 class DescarteIn(BaseModel):

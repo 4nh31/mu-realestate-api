@@ -28,8 +28,15 @@ class AuditoriaRepository:
         self.db.add(registro)
 
     def consultar(self, entidad: str | None, entidad_id: int | None, usuario_id: int | None,
-                  limite: int, desplazamiento: int) -> list[RegistroAuditoria]:
+                  limite: int, desplazamiento: int, desde: datetime | None = None, hasta: datetime | None = None,
+                  accion: str | None = None) -> list[RegistroAuditoria]:
         stmt = select(RegistroAuditoria).order_by(RegistroAuditoria.fecha.desc(), RegistroAuditoria.id.desc())
+        if desde is not None:
+            stmt = stmt.where(RegistroAuditoria.fecha >= desde)
+        if hasta is not None:
+            stmt = stmt.where(RegistroAuditoria.fecha < hasta)
+        if accion:
+            stmt = stmt.where(RegistroAuditoria.accion == accion)
         if entidad:
             stmt = stmt.where(RegistroAuditoria.entidad == entidad)
         if entidad_id is not None:
@@ -37,3 +44,21 @@ class AuditoriaRepository:
         if usuario_id is not None:
             stmt = stmt.where(RegistroAuditoria.usuario_id == usuario_id)
         return list(self.db.scalars(stmt.limit(limite).offset(desplazamiento)))
+
+    def nombres_usuarios(self, ids: set[int]) -> dict[int, str]:
+        from app.features.usuarios.infrastructure import Usuario
+
+        if not ids:
+            return {}
+        return dict(self.db.execute(select(Usuario.id, Usuario.nombre).where(Usuario.id.in_(ids))).all())
+
+    def titulos_propiedades(self, ids: set[int]) -> dict[int, tuple[str, str | None]]:
+        """Título y zona de las propiedades citadas en la bitácora."""
+        from app.features.catalogos.infrastructure import Zona
+        from app.features.propiedades.infrastructure import Propiedad
+
+        if not ids:
+            return {}
+        filas = self.db.execute(select(Propiedad.id, Propiedad.titulo, Zona.nombre)
+                                .outerjoin(Zona, Zona.id == Propiedad.zona_id).where(Propiedad.id.in_(ids)))
+        return {pid: (titulo, zona) for pid, titulo, zona in filas}
