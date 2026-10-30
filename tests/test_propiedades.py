@@ -119,3 +119,10 @@ def test_desactivar_oculta_la_propiedad_publicada(client, admin):
     assert client.get(f"/api/v1/publico/propiedades/{p['id']}").status_code == 404
     detalle = client.get(f"/api/v1/propiedades/{p['id']}", headers=admin).json()
     assert detalle["activo"] is False and detalle["estado_publicacion"] == "oculta"
+
+
+def test_bodega_es_un_tipo_de_inmueble(client, admin):
+    p = nueva(client, admin, titulo="Bodega industrial en Cancún", tipo="bodega", recamaras=None, banos=None)
+    publicar(client, admin, p["id"])
+    r = client.get("/api/v1/publico/propiedades", params={"tipo": "bodega"}).json()
+    assert r["total"] == 1 and r["elementos"][0]["tipo"] == "bodega"

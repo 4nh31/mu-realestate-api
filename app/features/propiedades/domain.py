@@ -16,6 +16,7 @@ class TipoPropiedad(str, enum.Enum):
     TERRENO = "terreno"
     LOTE = "lote"
     COMERCIAL = "comercial"
+    BODEGA = "bodega"
 
 
 class EstadoPublicacion(str, enum.Enum):
