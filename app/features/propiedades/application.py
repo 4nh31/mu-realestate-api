@@ -120,7 +120,7 @@ def agregar_medios(repo: PropiedadRepository, auditor: Auditor, almacen: Almacen
     nuevos = []
     for i, archivo in enumerate(archivos):
         clave = almacen.guardar_nuevo(archivo.contenido, PUBLICO, f"propiedades/{propiedad.id}", archivo.mime)
-        medio = Medio(tipo=TipoMedio.FOTO, url=almacen.url_publica(clave), public_id=clave, orden=orden + i,
+        medio = Medio(tipo=TipoMedio.FOTO, url_guardada=clave, public_id=clave, orden=orden + i,
                       es_portada=not hay_portada and i == 0)
         propiedad.medios.append(medio)
         nuevos.append(medio)

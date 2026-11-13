@@ -81,7 +81,7 @@ def main() -> None:
                 continue
             for i in range(FOTOS_POR_PROPIEDAD):
                 url = FOTOS[(n * FOTOS_POR_PROPIEDAD + i) % len(FOTOS)]
-                propiedad.medios.append(Medio(tipo=TipoMedio.FOTO, url=url, orden=i, es_portada=i == 0))
+                propiedad.medios.append(Medio(tipo=TipoMedio.FOTO, url_guardada=url, orden=i, es_portada=i == 0))
         db.commit()
     print("Datos de demostración listos. Personal: " + ", ".join(e for e, _, _ in PERSONAL)
           + f" (contraseña {PASSWORD}).")

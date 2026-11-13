@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     api_public_url: str = "http://localhost:8000"
 
-    # Archivos: "local" guarda en STORAGE_DIR; "s3" usa un bucket compatible (DigitalOcean Spaces).
+    # Archivos: "local" guarda en STORAGE_DIR (volumen en Docker); "s3" usa un bucket compatible con S3.
     storage_backend: str = "local"
     storage_dir: str = "./storage"
     s3_endpoint_url: str | None = None

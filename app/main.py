@@ -69,7 +69,7 @@ for router in (auth_router, cuentas_auth_router, cuenta_router, usuarios_router,
                avisos_router, prospectos_router, agenda_router, dashboard_router, auditoria_router, archivos_router):
     app.include_router(router, prefix=API_PREFIX)
 
-# En desarrollo la API sirve las fotos públicas; en producción salen directo del bucket.
+# Con almacenamiento local la API sirve las fotos públicas (en el VPS, Nginx puede servirlas directo).
 almacen = get_almacenamiento()
 if isinstance(almacen, AlmacenamientoLocal):
     app.mount("/archivos", StaticFiles(directory=almacen.raiz / PUBLICO), name="archivos")

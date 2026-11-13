@@ -118,11 +118,21 @@ class Medio(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     propiedad_id: Mapped[int] = mapped_column(ForeignKey("propiedades.id", ondelete="CASCADE"), index=True)
     tipo: Mapped[TipoMedio] = mapped_column(pg_enum(TipoMedio, "tipo_medio"))
-    url: Mapped[str] = mapped_column(String(500))
+    # Para fotos subidas se guarda solo la clave (public_id) y la URL se arma al responder con la
+    # dirección pública vigente (API_PUBLIC_URL o el bucket); así no se rompen si cambia el dominio.
+    # url_guardada solo se usa para fotos externas (p. ej. los datos demo).
+    url_guardada: Mapped[str] = mapped_column("url", String(500))
     public_id: Mapped[str | None] = mapped_column(String(200))
     orden: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
     es_portada: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     propiedad: Mapped[Propiedad] = relationship(back_populates="medios")
+
+    @property
+    def url(self) -> str:
+        if self.public_id:
+            from app.core.storage import get_almacenamiento
+            return get_almacenamiento().url_publica(self.public_id)
+        return self.url_guardada
 
 
 @dataclass

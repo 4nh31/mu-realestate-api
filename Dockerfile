@@ -8,7 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN useradd --create-home appuser
+# La carpeta de archivos debe pertenecer al usuario sin privilegios que corre la API.
+RUN useradd --create-home appuser && mkdir -p /app/storage && chown -R appuser:appuser /app/storage
 USER appuser
 
 EXPOSE 8000

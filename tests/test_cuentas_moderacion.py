@@ -217,3 +217,21 @@ def test_personal_notas_y_bitacora_con_nombres(client, admin, asesor):
     registro = client.get(f"{API}/auditoria", headers=admin, params={"entidad": "propiedades"}).json()[0]
     assert registro["usuario_nombre"] == "admin" and registro["entidad_titulo"] == "Casa para la bitácora"
     assert registro["entidad_zona"] == "Residencial Cumbres"
+
+
+def test_la_url_de_la_foto_se_arma_con_el_dominio_vigente(client, admin, monkeypatch):
+    """La BD guarda solo la clave del archivo: si cambia API_PUBLIC_URL, las fotos siguen funcionando."""
+    from sqlalchemy import text
+
+    from app.core.database import SessionLocal
+    from app.core.storage import get_almacenamiento
+
+    pid = nueva(client, admin)["id"]
+    medio = client.post(f"{API}/propiedades/{pid}/medios", headers=admin,
+                        files=[("archivos", ("a.png", PNG, "image/png"))]).json()[0]
+    with SessionLocal() as db:
+        guardada = db.execute(text("select url from medios where id = :i"), {"i": medio["id"]}).scalar_one()
+    assert not guardada.startswith("http")
+    monkeypatch.setattr(get_almacenamiento(), "base_url", "https://panel.murealestate.mx")
+    url = client.get(f"{API}/propiedades/{pid}", headers=admin).json()["medios"][0]["url"]
+    assert url == f"https://panel.murealestate.mx/archivos/{guardada.removeprefix('publico/')}"

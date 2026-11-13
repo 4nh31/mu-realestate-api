@@ -5,8 +5,9 @@ services:
       POSTGRES_DB: mu_realestate
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    # Solo accesible desde el propio equipo/servidor; nunca publicar PostgreSQL a internet.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -22,6 +23,10 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/mu_realestate
+      STORAGE_DIR: /app/storage
+    # Las fotos subidas viven en un volumen: sobreviven a reconstruir o actualizar el contenedor.
+    volumes:
+      - archivos:/app/storage
     ports:
       - "8000:8000"
     depends_on:
@@ -30,3 +35,4 @@ services:
 
 volumes:
   pgdata:
+  archivos:

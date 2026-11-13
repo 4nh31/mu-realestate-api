@@ -1,7 +1,7 @@
 """Almacenamiento de archivos: fotos públicas y documentos privados (expedientes, firmas).
 
-En desarrollo se guardan en disco (STORAGE_DIR) y la API los sirve; en producción se usa un bucket
-compatible con S3 (DigitalOcean Spaces). Los archivos privados nunca tienen URL directa: solo se
+Por defecto se guardan en disco (STORAGE_DIR), que en Docker es un volumen; así se usa en el VPS de
+NEUBOX. Opcionalmente puede usarse un bucket compatible con S3. Los archivos privados nunca tienen URL directa: solo se
 accede a ellos con una URL firmada que expira (RN-10).
 """
 import hashlib

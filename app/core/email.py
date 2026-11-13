@@ -1,6 +1,7 @@
 """Envío de correos por SMTP. Sin SMTP_HOST (desarrollo y pruebas) el correo solo se registra en el log."""
 import logging
 import smtplib
+from collections import deque
 from dataclasses import dataclass
 from email.message import EmailMessage
 
@@ -17,7 +18,7 @@ class Correo:
 
 
 # Correos "enviados" cuando no hay SMTP configurado; las pruebas leen aquí los códigos de verificación.
-BANDEJA_DESARROLLO: list[Correo] = []
+BANDEJA_DESARROLLO: deque[Correo] = deque(maxlen=200)
 
 
 def enviar_correo(para: str, asunto: str, cuerpo: str) -> None:

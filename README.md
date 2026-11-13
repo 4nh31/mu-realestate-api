@@ -243,7 +243,7 @@ El administrador no tiene `cuenta:usar`: las cuentas del sitio y las del persona
 
 ### Archivos y correo
 
-* **Archivos:** con `STORAGE_BACKEND=local` las fotos se guardan en `STORAGE_DIR` y la API las sirve en `/archivos/...`. En producción usa `STORAGE_BACKEND=s3` con DigitalOcean Spaces (`S3_*`). Solo se aceptan JPG, PNG y WEBP (se revisa el contenido real, no la extensión) de hasta `MAX_UPLOAD_MB`.
+* **Archivos:** con `STORAGE_BACKEND=local` las fotos se guardan en `STORAGE_DIR` y la API las sirve en `/archivos/...`. En el VPS de NEUBOX también se usa `local`: en Docker la carpeta es el volumen `archivos`, así que las fotos sobreviven a actualizar el contenedor. La base de datos solo guarda la clave de cada archivo y la URL se arma con `API_PUBLIC_URL`, por lo que basta con poner ahí el dominio real. `STORAGE_BACKEND=s3` queda como opción para un bucket compatible con S3. Solo se aceptan JPG, PNG y WEBP (se revisa el contenido real, no la extensión) de hasta `MAX_UPLOAD_MB`.
 * **Correo:** con `SMTP_HOST` vacío los correos (códigos de verificación, avisos) solo se escriben en el log de la API. Para enviarlos de verdad llena las variables `SMTP_*`.
 
 ---
