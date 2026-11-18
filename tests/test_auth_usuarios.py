@@ -69,3 +69,14 @@ def test_contrasena_se_guarda_con_hash_bcrypt(client, admin):
     with SessionLocal() as db:
         u = UsuarioRepository(db).obtener_por_email("admin@murealestate.mx")
         assert u.password_hash.startswith("$2b$") and "Secreta123" not in u.password_hash
+
+
+def test_en_produccion_no_arranca_con_clave_jwt_de_ejemplo():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.core.config import Settings
+
+    with pytest.raises(ValidationError, match="JWT_SECRET_KEY"):
+        Settings(_env_file=None, environment="production", jwt_secret_key="CAMBIAR_EN_PRODUCCION")
+    assert Settings(_env_file=None, environment="production", jwt_secret_key="x" * 48).environment == "production"

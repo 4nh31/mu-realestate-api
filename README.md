@@ -90,6 +90,8 @@ Te pedirá la contraseña (mínimo 8 caracteres).
 
 Detener: `Ctrl + C` y luego `docker compose down` (los datos se conservan en el volumen `pgdata`).
 
+> **Producción:** para publicar el sitio en el VPS (front, API, base de datos y HTTPS) sigue [DESPLIEGUE.md](DESPLIEGUE.md).
+
 ---
 
 ## 3B. Ejecutar sin Docker

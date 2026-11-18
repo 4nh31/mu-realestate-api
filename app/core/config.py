@@ -1,6 +1,7 @@
 """Configuración central de la aplicación, leída desde variables de entorno (.env)."""
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,6 +39,14 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = "MU Real Estate <no-responder@murealestate.mx>"
     codigo_verificacion_minutos: int = 15
+
+    @model_validator(mode="after")
+    def _exigir_clave_segura_en_produccion(self) -> "Settings":
+        # Con la clave de ejemplo cualquiera podría firmar tokens válidos: en producción la API no arranca.
+        if self.environment == "production" and (
+                len(self.jwt_secret_key) < 32 or self.jwt_secret_key.startswith("CAMBIAR")):
+            raise ValueError("JWT_SECRET_KEY debe ser una clave aleatoria de al menos 32 caracteres en producción")
+        return self
 
 
 @lru_cache
