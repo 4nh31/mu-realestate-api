@@ -16,7 +16,7 @@ Internet ──► Caddy (contenedor "web", puertos 80/443)
 | Qué | Para qué |
 |---|---|
 | VPS con Ubuntu 22.04 o 24.04, acceso **root** por SSH | Correr los contenedores |
-| Un dominio (p. ej. `murealestate.mx`) | Dirección del sitio y certificado HTTPS |
+| Un dominio (p. ej. `murealestate.com`) | Dirección del sitio y certificado HTTPS |
 | Acceso a los dos repositorios de GitHub | Descargar el código en el servidor |
 | (Opcional) Cuenta de correo SMTP | Enviar códigos de verificación y recuperación de contraseña |
 
@@ -29,9 +29,9 @@ En el panel donde se administra el dominio (DNS), crear:
 | Tipo | Nombre | Valor |
 |---|---|---|
 | A | `@` | IP pública del VPS |
-| CNAME | `www` | `murealestate.mx` |
+| CNAME | `www` | `murealestate.com` |
 
-El cambio puede tardar de minutos a unas horas. Se comprueba con `ping murealestate.mx`: debe responder la IP del VPS.
+El cambio puede tardar de minutos a unas horas. Se comprueba con `ping murealestate.com`: debe responder la IP del VPS.
 
 ## 2. Preparar el servidor
 
@@ -50,7 +50,7 @@ docker --version && docker compose version
 
 ## 3. Descargar el código
 
-Los dos repositorios van **uno al lado del otro**; el nombre de la carpeta del front importa.
+Los dos repositorios van **uno al lado del otro**; el nombre de la carpeta del front importa. Los cambios del front deben estar en su rama `main` antes de clonar.
 
 ```bash
 mkdir -p /opt/mu && cd /opt/mu
@@ -89,7 +89,7 @@ de la base de datos al arrancar. En el log de `web` debe aparecer `certificate o
 ## 6. Crear el primer administrador
 
 ```bash
-docker compose -f docker-compose.prod.yml exec api python -m app.scripts.crear_admin --email admin@murealestate.mx --nombre "Administrador"
+docker compose -f docker-compose.prod.yml exec api python -m app.scripts.crear_admin --email admin@murealestate.com --nombre "Administrador"
 ```
 
 Pide la contraseña (mínimo 8 caracteres). Con esa cuenta se entra en `https://TU-DOMINIO/admin`
@@ -143,6 +143,7 @@ gunzip -c /opt/mu/respaldos/bd_2026-11-20.sql.gz | docker compose -f docker-comp
 | Síntoma | Causa probable |
 |---|---|
 | El navegador no abre el dominio | El DNS aún no apunta al VPS, o el firewall de NEUBOX bloquea 80/443 |
+| El sitio no abre aunque los contenedores están "running" | El proveedor tiene un firewall propio en su panel (o reglas de iptables en la imagen del servidor): abrir ahí los puertos 80 y 443 |
 | `web` no obtiene certificado | Igual que arriba: Let's Encrypt necesita llegar al puerto 80 con el dominio |
 | `api` se reinicia una y otra vez | Ver `docker compose -f docker-compose.prod.yml logs api`; casi siempre falta una variable en `.env` |
 | No llegan los códigos de verificación | `SMTP_HOST` vacío o datos SMTP incorrectos |
