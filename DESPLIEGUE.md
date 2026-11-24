@@ -1,4 +1,4 @@
-# Despliegue en el VPS de NEUBOX
+# Despliegue en el VPS de HostGator
 
 Guía paso a paso para publicar MU Real Estate (front + API + base de datos) en un VPS Linux con Docker.
 Al terminar, el sitio queda en `https://TU-DOMINIO` con certificado HTTPS gratuito que se renueva solo.
@@ -142,7 +142,7 @@ gunzip -c /opt/mu/respaldos/bd_2026-11-20.sql.gz | docker compose -f docker-comp
 
 | Síntoma | Causa probable |
 |---|---|
-| El navegador no abre el dominio | El DNS aún no apunta al VPS, o el firewall de NEUBOX bloquea 80/443 |
+| El navegador no abre el dominio | El DNS aún no apunta al VPS, o el firewall del proveedor bloquea 80/443 |
 | El sitio no abre aunque los contenedores están "running" | El proveedor tiene un firewall propio en su panel (o reglas de iptables en la imagen del servidor): abrir ahí los puertos 80 y 443 |
 | `web` no obtiene certificado | Igual que arriba: Let's Encrypt necesita llegar al puerto 80 con el dominio |
 | `api` se reinicia una y otra vez | Ver `docker compose -f docker-compose.prod.yml logs api`; casi siempre falta una variable en `.env` |
